@@ -45,3 +45,11 @@ export async function getCustomRecipes() {
     return { success: false, recipes: [], error: error.message };
   }
 }
+export async function deleteRecipe(id: string) {
+  try {
+    await db.delete(recipes).where(eq(recipes.id, id));
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

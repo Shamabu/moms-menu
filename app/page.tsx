@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { generateRecipe } from "@/app/actions/generateMeal";
-import { getCustomRecipes } from "@/app/actions/recipeActions";
+import { getCustomRecipes, deleteRecipe } from "@/app/actions/recipeActions";
 import AddMealModal from "@/app/components/AddMealModal";
+import SavedMealsAgent from "./components/SavedMealsAgent";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"ai" | "custom">("ai");
@@ -12,6 +13,7 @@ export default function Home() {
   const [aiRecipe, setAiRecipe] = useState<any>(null);
   const [customRecipes, setCustomRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -37,6 +39,18 @@ export default function Home() {
       setError(res.error || "Failed to generate recipe.");
     }
     setLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this recipe?")) return;
+    setDeletingId(id);
+    const res = await deleteRecipe(id);
+    if (res.success) {
+      await loadCustomRecipes();
+    } else {
+      alert(res.error || "Failed to delete recipe.");
+    }
+    setDeletingId(null);
   };
 
   return (
@@ -168,6 +182,8 @@ export default function Home() {
       {/* Custom Recipes Tab */}
       {activeTab === "custom" && (
         <div className="space-y-6">
+          <SavedMealsAgent />
+
           {customRecipes.length === 0 ? (
             <div className="text-center py-12 text-gray-500 bg-white rounded-2xl border border-amber-100">
               <p>No custom recipes added yet.</p>
@@ -182,10 +198,20 @@ export default function Home() {
             customRecipes.map((item) => (
               <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-amber-100">
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
-                  <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">
-                    ⏱️ {item.prepTime}
-                  </span>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
+                    <span className="inline-block mt-1 bg-amber-100 text-amber-800 px-3 py-0.5 rounded-full text-xs font-semibold">
+                      ⏱️ {item.prepTime}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={deletingId === item.id}
+                    className="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                  >
+                    {deletingId === item.id ? "Deleting..." : "🗑️ Delete"}
+                  </button>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
